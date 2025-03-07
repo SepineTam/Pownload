@@ -6,7 +6,7 @@
 
 [![en](https://img.shields.io/badge/lang-English-red.svg)](../../../README.md)
 [![cn](https://img.shields.io/badge/语言-中文-yellow.svg)](README.md)
-![版本](https://img.shields.io/badge/version-0.0.2-blue.svg?cacheSeconds=2592000)
+![版本](https://img.shields.io/badge/version-0.0.3-blue.svg?cacheSeconds=2592000)
 [![许可证: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](#)
 [![Chrome](https://img.shields.io/badge/Chrome-88+-green.svg)](#)
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pownload",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "CNKI批量下载插件",
   "permissions": [
     "activeTab",

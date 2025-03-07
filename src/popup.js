@@ -1,19 +1,45 @@
-document.getElementById('startDownload').addEventListener('click', async () => {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+document.addEventListener('DOMContentLoaded', function() {
+  // 创建暂停时长控制界面
+  const controlDiv = document.createElement('div');
+  controlDiv.style.marginBottom = '10px';
   
-  // 将下载逻辑注入到页面中执行
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    function: startDownload
-  });
+  const pauseLabel = document.createElement('label');
+  pauseLabel.textContent = '暂停时长(秒): ';
+  
+  const pauseDurationInput = document.createElement('input');
+  pauseDurationInput.type = 'number';
+  pauseDurationInput.min = '0.1';
+  pauseDurationInput.step = '0.1';
+  pauseDurationInput.value = '0.1';
+  pauseDurationInput.style.width = '60px';
+  
+  controlDiv.appendChild(pauseLabel);
+  controlDiv.appendChild(pauseDurationInput);
+  
+  // 将控制界面插入到开始按钮之前
+  const startButton = document.getElementById('startDownload');
+  startButton.parentNode.insertBefore(controlDiv, startButton);
+  
+  // 修改点击事件处理
+  startButton.addEventListener('click', async () => {
+    const pauseDuration = parseFloat(pauseDurationInput.value) * 1000; // 转换为毫秒
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    // 注入下载脚本并传递暂停时长
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: startDownload,
+      args: [pauseDuration]  // 将暂停时长作为参数传递
+    });
 
-  // 更新popup中的状态显示
-  const status = document.getElementById('status');
-  status.textContent = '开始下载...';
+    // 更新状态显示
+    const status = document.getElementById('status');
+    status.textContent = '开始下载...';
+  });
 });
 
-// 注入到页面中执行的函数
-function startDownload() {
+// 修改注入函数以接收暂停时长参数
+function startDownload(pauseDuration) {
   async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -22,19 +48,16 @@ function startDownload() {
     // 获取所有文章链接
     const articles = Array.from(document.querySelectorAll('#rightCataloglist .row .name a'));
     
-    console.log(`找到 ${articles.length} 篇文章`); // 调试日志
+    console.log(`找到 ${articles.length} 篇文章`);
     
     for(let i = 0; i < articles.length; i++) {
       const article = articles[i];
       const url = article.href;
       
-      console.log(`处理第 ${i + 1} 篇文章: ${url}`); // 调试日志
+      console.log(`处理第 ${i + 1} 篇文章: ${url}`);
       
-      // 每下载两篇文章添加1-3秒的随机延迟
-      if(i > 0 && i % 2 === 0) {
-        const delay = Math.floor(Math.random() * 2000) + 1000;
-        await sleep(delay);
-      }
+      // 使用用户设定的暂停时长
+      await sleep(pauseDuration);
       
       // 打开新页面
       window.open(url, '_blank');
