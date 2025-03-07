@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Pownload",
+  "version": "0.0.1",
+  "description": "CNKI批量下载插件",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.cnki.net/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "128": "img/icons.svg"
+  }
+} 
