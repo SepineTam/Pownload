@@ -12,10 +12,34 @@ async function downloadWithDelay() {
       const pdfLink = pdfDownBtn.href;
       console.log('准备下载:', pdfLink); // 调试日志
       
-      // 触发下载
-      window.location.href = pdfLink;
+      // 不再使用window.location跳转，而是发送消息给background.js进行后台下载
+      chrome.runtime.sendMessage({
+        action: 'downloadFile',
+        url: pdfLink,
+        filename: document.title.replace(/[\\/:*?"<>|]/g, '_') + '.pdf' // 使用当前页面标题作为文件名
+      }, response => {
+        console.log('下载响应:', response);
+        // 向页面通知下载状态
+        if (response && response.success) {
+          chrome.runtime.sendMessage({
+            action: 'reportDownloadStatus',
+            success: true
+          });
+        } else {
+          chrome.runtime.sendMessage({
+            action: 'reportDownloadStatus',
+            success: false,
+            error: response?.error || '未知错误'
+          });
+        }
+      });
     } catch (err) {
       console.error('下载过程出错:', err);
+      chrome.runtime.sendMessage({
+        action: 'reportDownloadStatus',
+        success: false,
+        error: err.message
+      });
     }
   }
 }
@@ -48,5 +72,14 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         }
         
         processElements();
+    } else if (request.action === "executeDownload") {
+        // 执行下载操作
+        downloadWithDelay().then(() => {
+            sendResponse({success: true});
+        }).catch(err => {
+            console.error('执行下载时出错:', err);
+            sendResponse({success: false, error: err.message});
+        });
+        return true; // 异步响应
     }
 }); 

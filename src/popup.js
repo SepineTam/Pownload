@@ -16,20 +16,37 @@ document.addEventListener('DOMContentLoaded', function() {
   controlDiv.appendChild(pauseLabel);
   controlDiv.appendChild(pauseDurationInput);
   
+  // 添加后台下载选项
+  const bgDownloadDiv = document.createElement('div');
+  bgDownloadDiv.style.marginBottom = '10px';
+  
+  const bgDownloadLabel = document.createElement('label');
+  bgDownloadLabel.textContent = '启用后台下载: ';
+  
+  const bgDownloadCheckbox = document.createElement('input');
+  bgDownloadCheckbox.type = 'checkbox';
+  bgDownloadCheckbox.checked = true;
+  
+  bgDownloadDiv.appendChild(bgDownloadLabel);
+  bgDownloadDiv.appendChild(bgDownloadCheckbox);
+  
   // 将控制界面插入到开始按钮之前
   const startButton = document.getElementById('startDownload');
   startButton.parentNode.insertBefore(controlDiv, startButton);
+  startButton.parentNode.insertBefore(bgDownloadDiv, startButton);
   
   // 修改点击事件处理
   startButton.addEventListener('click', async () => {
     const pauseDuration = parseFloat(pauseDurationInput.value) * 1000; // 转换为毫秒
+    const useBgDownload = bgDownloadCheckbox.checked; // 获取是否启用后台下载
+    
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
-    // 注入下载脚本并传递暂停时长
+    // 注入下载脚本并传递参数
     chrome.scripting.executeScript({
       target: { tabId: tab.id },
       function: startDownload,
-      args: [pauseDuration]  // 将暂停时长作为参数传递
+      args: [pauseDuration, useBgDownload]  // 传递暂停时长和是否后台下载
     });
 
     // 更新状态显示
@@ -38,8 +55,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// 修改注入函数以接收暂停时长参数
-function startDownload(pauseDuration) {
+// 修改注入函数以接收参数
+function startDownload(pauseDuration, useBgDownload) {
   async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
@@ -53,14 +70,28 @@ function startDownload(pauseDuration) {
     for(let i = 0; i < articles.length; i++) {
       const article = articles[i];
       const url = article.href;
+      const title = article.textContent.trim();
       
-      console.log(`处理第 ${i + 1} 篇文章: ${url}`);
+      console.log(`处理第 ${i + 1}/${articles.length} 篇文章: ${title}`);
       
       // 使用用户设定的暂停时长
       await sleep(pauseDuration);
       
-      // 打开新页面
-      window.open(url, '_blank');
+      if (useBgDownload) {
+        // 使用后台下载模式
+        chrome.runtime.sendMessage({
+          action: 'openSilentTabAndDownload',
+          url: url,
+          title: title,
+          index: i + 1,
+          total: articles.length
+        }, response => {
+          console.log(`文章 ${i+1} 下载结果:`, response);
+        });
+      } else {
+        // 传统模式：打开新页面
+        window.open(url, '_blank');
+      }
     }
   }
 
